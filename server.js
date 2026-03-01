@@ -12,6 +12,23 @@ app.get("/health", (_, res) =>
   res.json({ status: "ok", time: new Date().toISOString() })
 );
 
+
+// ── Debug ─────────────────────────────────────────────────────────────────
+app.get("/debug", async (_, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.json({ ok: false, problema: "ANTHROPIC_API_KEY nao existe", solucao: "Va no Render > Environment > adicione a variavel" });
+  try {
+    const test = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 10, messages: [{ role: "user", content: "oi" }] })
+    });
+    const data = await test.json();
+    if (test.ok) return res.json({ ok: true, mensagem: "Chave funcionando!", keyPrefix: apiKey.slice(0,16)+"..." });
+    return res.json({ ok: false, erro: data.error?.message, tipo: data.error?.type, keyPrefix: apiKey.slice(0,16)+"..." });
+  } catch (err) { return res.json({ ok: false, erro: err.message }); }
+});
+
 // ── API Proxy ─────────────────────────────────────────────────────────────
 app.post("/api/games", async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -102,7 +119,7 @@ REGRAS:
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 16000,
         system: SYSTEM,
         tools: [{ type: "web_search_20250305", name: "web_search" }],
